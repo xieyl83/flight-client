@@ -41,7 +41,12 @@ const SearchResultPage = () => {
     }
 
     const fetchData = async () => {
-      const response = await getFlights();
+      const response = await getFlights(
+        gctx.searchForm.dep,
+        gctx.searchForm.des,
+        dayjs(gctx.searchForm.depDate).format('YYYY-MM-DD')
+      );
+      // todo: treat errors
       const arr = response.data;
       arr.map((v) => {
         const dep = dayjs(`${v.departure_date} ${v.departure_time}`);
