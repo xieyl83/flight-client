@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import GlobalContext from '../context/globalContext';
 import sortFlights from '../utils/sortFlights';
+import getFlights from '../services/getFlights';
 dayjs.extend(duration);
 
 const SearchResultPage = () => {
@@ -39,61 +40,9 @@ const SearchResultPage = () => {
       return;
     }
 
-    // do search, using axios
-    // /api/flights
-    setTimeout(() => {
-      const result = {
-        success: true,
-        code: 200,
-        message: '',
-        data: {
-          flights: [
-            {
-              flight_id: 1,
-              flight_number: 'F001',
-              company_id: 'CA',
-              departure_airport_id: 1,
-              destination_airport_id: 2,
-              departure_date: '2025-07-01',
-              departure_time: '13:00:00',
-              destination_date: '2025-07-02',
-              destination_time: '09:00:00',
-              stop_over: '',
-              price: 1234.0,
-              dep_code: 'bja',
-              dep_name: '北京A',
-              dep_city: '北京',
-              des_code: 'sha',
-              des_name: '上海A',
-              des_city: '上海',
-              name_en: 'Air China Limited',
-              name_cn: '中国国际航空',
-            },
-            {
-              flight_id: 2,
-              flight_number: 'F002',
-              company_id: 'HO',
-              departure_airport_id: 2,
-              destination_airport_id: 1,
-              departure_date: '2025-07-05',
-              departure_time: '08:00:00',
-              destination_date: '2025-07-06',
-              destination_time: '15:00:00',
-              stop_over: '9,4',
-              price: 856.0,
-              dep_code: 'sha',
-              dep_name: '上海A',
-              dep_city: '上海',
-              des_code: 'bja',
-              des_name: '北京A',
-              des_city: '北京',
-              name_en: 'Juneyao Airlines Co., Ltd',
-              name_cn: '吉祥航空',
-            },
-          ],
-        },
-      };
-      const arr = result.data.flights;
+    const fetchData = async () => {
+      const response = await getFlights();
+      const arr = response.data;
       arr.map((v) => {
         const dep = dayjs(`${v.departure_date} ${v.departure_time}`);
         const des = dayjs(`${v.destination_date} ${v.destination_time}`);
@@ -112,7 +61,82 @@ const SearchResultPage = () => {
       sortAndSetFlights(arr);
       // setFlights(sortFlights(arr, 'departure'));
       setIsLoading(false);
-    }, 3000);
+    };
+    fetchData();
+
+    // /api/flights
+    // setTimeout(() => {
+    //   const result = {
+    //     success: true,
+    //     code: 200,
+    //     message: '',
+    //     data: {
+    //       flights: [
+    //         {
+    //           flight_id: 1,
+    //           flight_number: 'F001',
+    //           company_id: 'CA',
+    //           departure_airport_id: 1,
+    //           destination_airport_id: 2,
+    //           departure_date: '2025-07-01',
+    //           departure_time: '13:00:00',
+    //           destination_date: '2025-07-02',
+    //           destination_time: '09:00:00',
+    //           stop_over: '',
+    //           price: 1234.0,
+    //           dep_code: 'bja',
+    //           dep_name: '北京A',
+    //           dep_city: '北京',
+    //           des_code: 'sha',
+    //           des_name: '上海A',
+    //           des_city: '上海',
+    //           name_en: 'Air China Limited',
+    //           name_cn: '中国国际航空',
+    //         },
+    //         {
+    //           flight_id: 2,
+    //           flight_number: 'F002',
+    //           company_id: 'HO',
+    //           departure_airport_id: 2,
+    //           destination_airport_id: 1,
+    //           departure_date: '2025-07-05',
+    //           departure_time: '08:00:00',
+    //           destination_date: '2025-07-06',
+    //           destination_time: '15:00:00',
+    //           stop_over: '9,4',
+    //           price: 856.0,
+    //           dep_code: 'sha',
+    //           dep_name: '上海A',
+    //           dep_city: '上海',
+    //           des_code: 'bja',
+    //           des_name: '北京A',
+    //           des_city: '北京',
+    //           name_en: 'Juneyao Airlines Co., Ltd',
+    //           name_cn: '吉祥航空',
+    //         },
+    //       ],
+    //     },
+    //   };
+    //   const arr = result.data.flights;
+    //   arr.map((v) => {
+    //     const dep = dayjs(`${v.departure_date} ${v.departure_time}`);
+    //     const des = dayjs(`${v.destination_date} ${v.destination_time}`);
+    //     const dur_ms = des.diff(dep);
+    //     const dur = dayjs.duration(dur_ms);
+    //     v.departure = dep.format('YYYY-MM-DD HH:mm');
+    //     v.destination = des.format('YYYY-MM-DD HH:mm');
+    //     v.stop_over = v.stop_over.split(',').filter((s) => s !== '');
+    //     v.dur_ms = dur_ms;
+    //     v.duration = `${dur.years() > 0 ? dur.years() + '年' : ''}${
+    //       dur.months() > 0 ? dur.months() + '月' : ''
+    //     }${dur.days() > 0 ? dur.days() + '天' : ''}${
+    //       dur.hours() > 0 ? dur.hours() + '小时' : ''
+    //     }${dur.minutes() > 0 ? dur.minutes() + '分' : ''}`;
+    //   });
+    //   sortAndSetFlights(arr);
+    //   // setFlights(sortFlights(arr, 'departure'));
+    //   setIsLoading(false);
+    // }, 3000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
