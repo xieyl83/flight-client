@@ -1,6 +1,6 @@
-import { useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Card, Placeholder } from 'react-bootstrap';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Card, Modal, Placeholder } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faArrowRightLong,
@@ -14,41 +14,46 @@ import duration from 'dayjs/plugin/duration';
 import GlobalContext from '../context/globalContext';
 import sortFlights from '../utils/sortFlights';
 import getFlights from '../services/getFlights';
+import { useDispatch, useSelector } from 'react-redux';
+import { setDepartureTrip } from '../stores/departureTripSlice';
+import { setReturnTrip } from '../stores/returnTripSlice';
 dayjs.extend(duration);
 
 const SearchResultPage = () => {
-  const gctx = useContext(GlobalContext);
+  // const gctx = useContext(GlobalContext);
   const navi = useNavigate();
-  const loc = useLocation();
 
-  const isReturnTrip = loc.state.returnTrip;
-  const dep = isReturnTrip ? gctx.searchForm.des : gctx.searchForm.dep;
-  const des = isReturnTrip ? gctx.searchForm.dep : gctx.searchForm.des;
-  const depDate = isReturnTrip
-    ? gctx.searchForm.rtnDate
-    : gctx.searchForm.depDate;
-  const pnum = gctx.searchForm.pnum;
+  const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
+  const dispatch = useDispatch();
 
   const [isLoading, setIsLoading] = useState(true);
   const [flights, setFlights] = useState([]);
-  // const [sortFlag, setSortFlag] = useState(1); // 1=出发时间,2=用时,3=到达时间,4=价格
+  const [isReturnTrip, setIsReturnTrip] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalInfo, setModalInfo] = useState({ title: '', message: '' });
+  const [pageKey, setPageKey] = useState(1);
   const sortFlag = useRef(1); // 1=出发时间,2=用时,3=到达时间,4=价格
 
   useEffect(() => {
-    if (gctx.searchForm.dep === null) {
+    if (searchForm.dep === null) {
       navi('/');
       return;
     }
 
     const fetchData = async () => {
       const response = await getFlights(
-        gctx.searchForm.dep,
-        gctx.searchForm.des,
-        dayjs(gctx.searchForm.depDate).format('YYYY-MM-DD')
+        isReturnTrip ? searchForm.des : searchForm.dep,
+        isReturnTrip ? searchForm.dep : searchForm.des,
+        dayjs(isReturnTrip ? searchForm.rtnDate : searchForm.depDate).format(
+          'YYYY-MM-DD'
+        )
       );
-      // todo: treat errors
-      const arr = response.data;
-      arr.map((v) => {
+      if (!response.success) {
+        setModalInfo({ title: '错误', message: response.message });
+        setShowModal(true);
+        return;
+      }
+      response.data.map((v) => {
         const dep = dayjs(`${v.departure_date} ${v.departure_time}`);
         const des = dayjs(`${v.destination_date} ${v.destination_time}`);
         const dur_ms = des.diff(dep);
@@ -63,87 +68,12 @@ const SearchResultPage = () => {
           dur.hours() > 0 ? dur.hours() + '小时' : ''
         }${dur.minutes() > 0 ? dur.minutes() + '分' : ''}`;
       });
-      sortAndSetFlights(arr);
-      // setFlights(sortFlights(arr, 'departure'));
+      sortAndSetFlights(response.data);
       setIsLoading(false);
     };
     fetchData();
-
-    // /api/flights
-    // setTimeout(() => {
-    //   const result = {
-    //     success: true,
-    //     code: 200,
-    //     message: '',
-    //     data: {
-    //       flights: [
-    //         {
-    //           flight_id: 1,
-    //           flight_number: 'F001',
-    //           company_id: 'CA',
-    //           departure_airport_id: 1,
-    //           destination_airport_id: 2,
-    //           departure_date: '2025-07-01',
-    //           departure_time: '13:00:00',
-    //           destination_date: '2025-07-02',
-    //           destination_time: '09:00:00',
-    //           stop_over: '',
-    //           price: 1234.0,
-    //           dep_code: 'bja',
-    //           dep_name: '北京A',
-    //           dep_city: '北京',
-    //           des_code: 'sha',
-    //           des_name: '上海A',
-    //           des_city: '上海',
-    //           name_en: 'Air China Limited',
-    //           name_cn: '中国国际航空',
-    //         },
-    //         {
-    //           flight_id: 2,
-    //           flight_number: 'F002',
-    //           company_id: 'HO',
-    //           departure_airport_id: 2,
-    //           destination_airport_id: 1,
-    //           departure_date: '2025-07-05',
-    //           departure_time: '08:00:00',
-    //           destination_date: '2025-07-06',
-    //           destination_time: '15:00:00',
-    //           stop_over: '9,4',
-    //           price: 856.0,
-    //           dep_code: 'sha',
-    //           dep_name: '上海A',
-    //           dep_city: '上海',
-    //           des_code: 'bja',
-    //           des_name: '北京A',
-    //           des_city: '北京',
-    //           name_en: 'Juneyao Airlines Co., Ltd',
-    //           name_cn: '吉祥航空',
-    //         },
-    //       ],
-    //     },
-    //   };
-    //   const arr = result.data.flights;
-    //   arr.map((v) => {
-    //     const dep = dayjs(`${v.departure_date} ${v.departure_time}`);
-    //     const des = dayjs(`${v.destination_date} ${v.destination_time}`);
-    //     const dur_ms = des.diff(dep);
-    //     const dur = dayjs.duration(dur_ms);
-    //     v.departure = dep.format('YYYY-MM-DD HH:mm');
-    //     v.destination = des.format('YYYY-MM-DD HH:mm');
-    //     v.stop_over = v.stop_over.split(',').filter((s) => s !== '');
-    //     v.dur_ms = dur_ms;
-    //     v.duration = `${dur.years() > 0 ? dur.years() + '年' : ''}${
-    //       dur.months() > 0 ? dur.months() + '月' : ''
-    //     }${dur.days() > 0 ? dur.days() + '天' : ''}${
-    //       dur.hours() > 0 ? dur.hours() + '小时' : ''
-    //     }${dur.minutes() > 0 ? dur.minutes() + '分' : ''}`;
-    //   });
-    //   sortAndSetFlights(arr);
-    //   // setFlights(sortFlights(arr, 'departure'));
-    //   setIsLoading(false);
-    // }, 3000);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [pageKey]);
 
   const sortAndSetFlights = (flightArr) => {
     let sortItem = '';
@@ -165,7 +95,7 @@ const SearchResultPage = () => {
     setFlights(sortFlights(flightArr, sortItem));
   };
 
-  const onBackClick = (e) => {
+  const onCancelClick = (e) => {
     e.preventDefault();
     navi('/');
   };
@@ -175,33 +105,83 @@ const SearchResultPage = () => {
     sortAndSetFlights(flights);
   };
 
+  const onBookClick = (flight) => {
+    if (isReturnTrip) {
+      dispatch(setReturnTrip(flight));
+      navi('/booking');
+    } else {
+      dispatch(setDepartureTrip(flight));
+      if (searchForm.isRoundTrip) {
+        setIsLoading(true);
+        setFlights([]);
+        setIsReturnTrip(true);
+        setPageKey(pageKey + 1);
+      } else {
+        navi('/booking');
+      }
+    }
+  };
+
+  const onModalClose = (e) => {
+    e.preventDefault();
+    setShowModal(false);
+    setModalInfo({ title: '', message: '' });
+    navi('/');
+  };
+
   return (
-    <>
+    <div key={pageKey}>
       <div className='w-160 my-2'>
         <div className='text-left text-4xl leading-12 text-gray-600'>
-          {isReturnTrip && <span className='mr-2'>(返程)</span>}
-          {dep}
+          {searchForm.isRoundTrip &&
+            (isReturnTrip ? (
+              <span className='mr-2'>(返程)</span>
+            ) : (
+              <span className='mr-2'>(往程)</span>
+            ))}
+          {isReturnTrip ? searchForm.des : searchForm.dep}
           <FontAwesomeIcon icon={faArrowRightLong} className='ml-2 mr-2' />
-          {des}
+          {isReturnTrip ? searchForm.dep : searchForm.des}
         </div>
         <div className='flex flex-row justify-between text-left text-2xl leading-10 text-gray-600'>
           <div>
             <span className='mr-5'>
-              {dayjs(depDate).format('YYYY年MM月DD日')}
+              {dayjs(
+                isReturnTrip ? searchForm.rtnDate : searchForm.depDate
+              ).format('YYYY年MM月DD日')}
             </span>
-            <span className='mr-1'>{pnum}</span>人
+            <span className='mr-1'>{searchForm.pnum}</span>人
           </div>
           <div>
-            <Button size='sm' className='me-1' onClick={() => onSortFlights(1)}>
+            <Button
+              size='sm'
+              variant='primary'
+              className='me-1'
+              onClick={() => onSortFlights(1)}
+            >
               最早出发
             </Button>
-            <Button size='sm' className='me-1' onClick={() => onSortFlights(2)}>
+            <Button
+              size='sm'
+              variant='primary'
+              className='me-1'
+              onClick={() => onSortFlights(2)}
+            >
               时间最短
             </Button>
-            <Button size='sm' className='me-1' onClick={() => onSortFlights(3)}>
+            <Button
+              size='sm'
+              variant='primary'
+              className='me-1'
+              onClick={() => onSortFlights(3)}
+            >
               最早到达
             </Button>
-            <Button size='sm' onClick={() => onSortFlights(4)}>
+            <Button
+              size='sm'
+              variant='primary'
+              onClick={() => onSortFlights(4)}
+            >
               价格最低
             </Button>
           </div>
@@ -223,8 +203,8 @@ const SearchResultPage = () => {
           </Card>
         ))}
       {!isLoading &&
-        flights.map((flight, idx) => {
-          const key = `key_sr_${idx}_${JSON.stringify(flight)}`;
+        flights.map((flight) => {
+          const key = `key_sr_${flight.flight_id}`;
           const iconPath = `/company_icon/${flight.company_id}.jpg`;
           return (
             <Card
@@ -266,12 +246,12 @@ const SearchResultPage = () => {
                         <span className='text-2xl'>{flight.des_name}</span>
                       </div>
                     </div>
-                    <div className='w-25 text-red-400 text-3xl font-bold flex items-end justify-end'>
+                    <div className='w-25 text-red-400 text-2xl font-bold flex items-end justify-end'>
                       <div>
                         <span className='text-base'>
                           <FontAwesomeIcon icon={faYenSign} />
                         </span>
-                        {flight.price}
+                        {flight.price.toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -283,18 +263,42 @@ const SearchResultPage = () => {
                       />
                       {flight.flight_number}
                     </div>
-                    <div>{flight.name_cn}</div>
+                    <div>{flight.company_name}</div>
                   </div>
                 </div>
               </div>
               <div className='w-15 text-center'>
-                <Button>订</Button>
+                <Button
+                  size='lg'
+                  variant='primary'
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onBookClick(flight);
+                  }}
+                >
+                  订
+                </Button>
               </div>
             </Card>
           );
         })}
-      <Button onClick={onBackClick}>back</Button>
-    </>
+      <div className='flex justify-end mt-3 mr-1'>
+        <Button variant='primary' onClick={onCancelClick}>
+          取 消
+        </Button>
+      </div>
+      <Modal size='md' show={showModal} backdrop='static' onHide={onModalClose}>
+        <Modal.Header className='text-xl font-bold'>
+          {modalInfo.title}
+        </Modal.Header>
+        <Modal.Body>{modalInfo.message}</Modal.Body>
+        <Modal.Footer>
+          <Button variant='secondary' onClick={onModalClose}>
+            确 定
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </div>
   );
 };
 
