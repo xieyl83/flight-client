@@ -1,6 +1,8 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage.jsx';
 import SearchResultPage from './pages/SearchResultPage.jsx';
+import BookingReviewPage from './pages/BookingReviewPage.jsx';
+import MyBookingsPage from './pages/MyBookingsPage.jsx';
 
 const router = createBrowserRouter([
   {
@@ -20,8 +22,12 @@ const router = createBrowserRouter([
     element: <SearchResultPage />,
   },
   {
-    path: '/go',
-    element: <div>Hello go path.</div>,
+    path: '/booking',
+    element: <BookingReviewPage />,
+  },
+  {
+    path: '/mybookings',
+    element: <MyBookingsPage />,
   },
 ]);
 

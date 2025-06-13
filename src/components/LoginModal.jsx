@@ -20,7 +20,7 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
       return f1 && f2;
     })();
     if (!valid) {
-      toast('请检查各项输入', { position: 'top-center', type: 'error' });
+      toast('请检查各项输入', { type: 'error' });
       return;
     }
     // do login
@@ -44,7 +44,7 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
       return f1 && f2 && f3;
     })();
     if (!valid) {
-      toast('请检查各项输入', { position: 'top-center', type: 'error' });
+      toast('请检查各项输入', { type: 'error' });
       return;
     }
     // do register
@@ -218,7 +218,7 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
           </Button>
         </Modal.Footer>
       </Modal>
-      <ToastContainer />
+      <ToastContainer position='top-center' />
     </>
   );
 };

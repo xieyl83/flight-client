@@ -1,9 +1,11 @@
 import { useContext, useRef, useState, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { faRefresh } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt } from '@fortawesome/free-solid-svg-icons';
 import { Button, Form, ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
+import { ToastContainer, toast } from 'react-toastify';
 import DatePicker from 'react-date-picker';
 import flightImage from '../assets/flight_title.jpg';
 import LocationModal from '../components/LocationModal';
@@ -13,10 +15,13 @@ import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import sleep from '../utils/sleep';
 import GlobalContext from '../context/globalContext';
+import { setSearchForm } from '../stores/searchFormSlice';
 
 const HomePage = () => {
   const gctx = useContext(GlobalContext);
   const navi = useNavigate();
+  const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
+  const dispatch = useDispatch();
 
   const flightImageElement = useRef(null);
 
@@ -25,13 +30,13 @@ const HomePage = () => {
   const [showLocation, setShowLocation] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [loginElementPos, setLoginElementPos] = useState([-999, -999]);
-  const [dep, setDep] = useState(gctx.searchForm.dep || '请选择');
-  const [des, setDes] = useState(gctx.searchForm.des || '请选择');
+  const [dep, setDep] = useState(searchForm.dep || '请选择');
+  const [des, setDes] = useState(searchForm.des || '请选择');
   const [isDep, setIsDep] = useState(true);
-  const [depDate, setDepDate] = useState(gctx.searchForm.depDate || new Date());
-  const [rtnDate, setRtnDate] = useState(gctx.searchForm.rtnDate || new Date());
-  const [pnum, setPnum] = useState(gctx.searchForm.pnum || '1');
-  const [roundTrip, setRoundTrip] = useState(gctx.searchForm.roundTrip);
+  const [depDate, setDepDate] = useState(searchForm.depDate || new Date());
+  const [rtnDate, setRtnDate] = useState(searchForm.rtnDate || new Date());
+  const [pnum, setPnum] = useState(searchForm.pnum || '1');
+  const [roundTrip, setRoundTrip] = useState(searchForm.isRoundTrip ? 2 : 1);
 
   useLayoutEffect(() => {
     const locate = async () => {
@@ -102,20 +107,56 @@ const HomePage = () => {
 
   const onSearch = (e) => {
     e.preventDefault();
+
+    // simple validations, validations should be taken in backend too.
+    if (
+      !dep ||
+      !des ||
+      dep === '' ||
+      des === '' ||
+      dep === '请选择' ||
+      des === '请选择'
+    ) {
+      toast('请选择出发地和到达地。', { type: 'error' });
+      return;
+    }
+    if (dep === des) {
+      toast('出发地和到达地不能相同。', { type: 'error' });
+      return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (depDate.getTime() < today) {
+      toast('出发日不能为过去日期。', { type: 'error' });
+      return;
+    }
+    if (roundTrip === 2) {
+      if (depDate.getTime() > rtnDate.getTime()) {
+        toast('返程日不能在出发日之前。', { type: 'error' });
+        return;
+      }
+    }
+
+    // do search
     const form = {
       dep: exchanged ? des : dep,
       des: exchanged ? dep : des,
       depDate,
       rtnDate,
       pnum,
-      roundTrip,
+      isRoundTrip: roundTrip === 2,
     };
-    gctx.searchForm = form;
-    navi('/search', { state: { returnTrip: false } });
+    dispatch(setSearchForm(form));
+    navi('/search');
   };
 
   const onRoundTripChange = (val) => {
     setRoundTrip(val);
+  };
+
+  const onGoMyBookings = (e) => {
+    e.preventDefault();
+    navi('/mybookings');
   };
 
   return (
@@ -141,6 +182,9 @@ const HomePage = () => {
           {gctx.isLogin && (
             <p className='text-white font-bold'>{gctx.userid}</p>
           )}
+          <Button variant='primary' className='ms-2' onClick={onGoMyBookings}>
+            我的订票信息
+          </Button>
         </div>
       </div>
       <div className='w-160 border-2 border-solid border-gray-100 rounded-lg shadow-md'>
@@ -268,6 +312,7 @@ const HomePage = () => {
         onClose={onLocationClose}
       />
       <LoginModal show={showLogin} onClose={onLoginClose} />
+      <ToastContainer position='top-center' />
     </>
   );
 };

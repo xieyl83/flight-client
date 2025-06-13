@@ -1,22 +1,27 @@
 import axios from 'axios';
 
-const getFlights = (dep, des, depDate) =>
+const bookFlights = (searchForm, departureTrip, returnTrip) =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
     };
-    const params = {
-      dep,
-      des,
-      depDate,
-    };
+    const flights = [];
+    flights.push({
+      flight_id: departureTrip.flight_id,
+      pnum: searchForm.pnum,
+    });
+    if (searchForm.isRoundTrip) {
+      flights.push({
+        flight_id: returnTrip.flight_id,
+        pnum: searchForm.pnum,
+      });
+    }
     axios
-      .get('/api/flights', { headers, params })
+      .post('/api/booking', { flights }, { headers })
       .then((response) => {
-        // todo: treat errors...
         resolve({
           success: response.data.success,
-          code: response.data.code, // response.status ?
+          code: response.data.status,
           message: response.data.message,
           data: response.data.data,
         });
@@ -26,20 +31,18 @@ const getFlights = (dep, des, depDate) =>
           resolve({
             success: false,
             code: err.response.status,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         } else {
           resolve({
             success: false,
             code: 0,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         }
       });
   });
 
-export default getFlights;
+export default bookFlights;
