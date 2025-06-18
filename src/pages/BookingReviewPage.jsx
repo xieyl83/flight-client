@@ -10,12 +10,13 @@ import {
   faPlaneArrival,
 } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer, toast } from 'react-toastify';
-// import GlobalContext from '../context/globalContext';
+import LoginModal from '../components/LoginModal';
+import { useGlobalContext } from '../context/globalContext';
 import { useSelector } from 'react-redux';
 import bookFlights from '../services/bookFlights';
 
 const BookingReviewPage = () => {
-  // const gctx = useContext(GlobalContext);
+  const { isLogin, token } = useGlobalContext();
   const navi = useNavigate();
 
   const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
@@ -31,16 +32,15 @@ const BookingReviewPage = () => {
     message: '',
     isError: false,
   });
+  const [showLogin, setShowLogin] = useState(false);
 
-  const onBookClick = async (e) => {
-    e.preventDefault();
+  const doBook = async () => {
     setProcessing(true);
     const response = await toast.promise(
-      bookFlights(searchForm, departureTrip, returnTrip),
+      bookFlights(token, searchForm, departureTrip, returnTrip),
       { pending: '机票预定中，请稍候...' }
     );
     if (response.success) {
-      // console.log(response.data);
       setModalInfo({
         isError: false,
         title: '已完成订票',
@@ -51,6 +51,16 @@ const BookingReviewPage = () => {
       toast(response.message, { type: 'error' });
     }
     setProcessing(false);
+  };
+
+  const onBookClick = async (e) => {
+    e.preventDefault();
+    if (!isLogin) {
+      setShowLogin(true);
+      return;
+    }
+
+    doBook();
   };
 
   const onCancelClick = (e) => {
@@ -66,6 +76,15 @@ const BookingReviewPage = () => {
   const onGoMyBookings = (e) => {
     e.preventDefault();
     navi('/mybookings');
+  };
+
+  const onLoginClose = () => {
+    setShowLogin(false);
+    toast('已取消登陆。', { type: 'warning' });
+  };
+
+  const afterLogin = () => {
+    doBook();
   };
 
   return (
@@ -245,6 +264,12 @@ const BookingReviewPage = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <LoginModal
+        show={showLogin}
+        onClose={onLoginClose}
+        afterLogin={afterLogin}
+        toast={toast}
+      />
       <ToastContainer position='top-center' />
     </div>
   );

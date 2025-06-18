@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, useLayoutEffect } from 'react';
+import { useRef, useState, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { faRefresh } from '@fortawesome/free-solid-svg-icons';
@@ -14,11 +14,11 @@ import HomePageStyles from '../styles/HomePage.module.css';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import sleep from '../utils/sleep';
-import GlobalContext from '../context/globalContext';
+import { useGlobalContext } from '../context/globalContext';
 import { setSearchForm } from '../stores/searchFormSlice';
 
 const HomePage = () => {
-  const gctx = useContext(GlobalContext);
+  const { isLogin, user, logout } = useGlobalContext();
   const navi = useNavigate();
   const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
   const dispatch = useDispatch();
@@ -37,6 +37,8 @@ const HomePage = () => {
   const [rtnDate, setRtnDate] = useState(searchForm.rtnDate || new Date());
   const [pnum, setPnum] = useState(searchForm.pnum || '1');
   const [roundTrip, setRoundTrip] = useState(searchForm.isRoundTrip ? 2 : 1);
+  const [userInfo, setUserInfo] = useState(user);
+  const [pageKey, setPageKey] = useState(1);
 
   useLayoutEffect(() => {
     const locate = async () => {
@@ -53,7 +55,7 @@ const HomePage = () => {
     return () => {
       window.removeEventListener('resize', locate);
     };
-  }, []);
+  }, [pageKey]);
 
   const onExchangeClick = (e) => {
     e.preventDefault();
@@ -92,7 +94,7 @@ const HomePage = () => {
 
   const onLoginClick = (e) => {
     e.preventDefault();
-    if (gctx.isLogin) return;
+    if (isLogin) return;
     setShowLogin(true);
   };
 
@@ -159,8 +161,19 @@ const HomePage = () => {
     navi('/mybookings');
   };
 
+  const afterLogin = () => {
+    setShowLogin(false);
+    setPageKey(pageKey + 1);
+  };
+
+  const onLogoutClick = () => {
+    logout();
+    setPageKey(pageKey + 1);
+    toast('已注销。', { type: 'success' });
+  };
+
   return (
-    <>
+    <div key={pageKey} className='flex flex-col items-center w-full'>
       <div className='relative'>
         <img
           ref={flightImageElement}
@@ -174,18 +187,33 @@ const HomePage = () => {
             left: `${loginElementPos[1]}px`,
           }}
         >
-          {!gctx.isLogin && (
+          {!isLogin && (
             <Button variant='primary' onClick={onLoginClick}>
               登 陆
             </Button>
           )}
-          {gctx.isLogin && (
-            <p className='text-white font-bold'>{gctx.userid}</p>
+          {isLogin && (
+            <span className='text-white font-bold'>
+              欢迎，{userInfo.firstName}&nbsp;{userInfo.lastName}
+            </span>
           )}
           <Button variant='primary' className='ms-2' onClick={onGoMyBookings}>
             我的订票信息
           </Button>
         </div>
+        {isLogin && (
+          <div
+            className='absolute'
+            style={{
+              top: `${loginElementPos[0]}px`,
+              right: `${loginElementPos[1] + 30}px`,
+            }}
+          >
+            <Button variant='primary' onClick={onLogoutClick}>
+              注 销
+            </Button>
+          </div>
+        )}
       </div>
       <div className='w-160 border-2 border-solid border-gray-100 rounded-lg shadow-md'>
         <div className='flex flex-row mt-3'>
@@ -311,9 +339,15 @@ const HomePage = () => {
         onLocationSelect={onLocationSelect}
         onClose={onLocationClose}
       />
-      <LoginModal show={showLogin} onClose={onLoginClose} />
+      <LoginModal
+        show={showLogin}
+        onClose={onLoginClose}
+        afterLogin={afterLogin}
+        toast={toast}
+        setUserInfo={setUserInfo}
+      />
       <ToastContainer position='top-center' />
-    </>
+    </div>
   );
 };
 

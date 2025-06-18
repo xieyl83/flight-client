@@ -1,32 +1,49 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Modal, Placeholder, Table } from 'react-bootstrap';
+import { ToastContainer, toast } from 'react-toastify';
+import LoginModal from '../components/LoginModal';
 import dayjs from 'dayjs';
 import getMyBookings from '../services/getMyBookings';
+import { useGlobalContext } from '../context/globalContext';
 
 const MyBookingsPage = () => {
-  // const gctx = useContext(GlobalContext);
+  const { isLogin, token } = useGlobalContext();
   const navi = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalInfo, setModalInfo] = useState({ title: '', message: '' });
+  const [showLogin, setShowLogin] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const [pageKey, setPageKey] = useState(1);
 
   useEffect(() => {
+    if (!isLogin) {
+      setShowLogin(true);
+      return;
+    }
+
     const fetchData = async () => {
-      const response = await getMyBookings(1, 100, '', 'asc');
+      const response = await getMyBookings(token, 1, 100, '', 'asc');
       if (!response.success) {
+        if (response.code === 403) {
+          setShowLogin(true);
+          return;
+        }
         setModalInfo({ title: '错误', message: response.message });
         setShowModal(true);
         return;
       }
       setBookings(response.data);
-      console.log(response.data);
       setIsLoading(false);
     };
-    fetchData();
-  }, []);
+    if (!initialized) {
+      setInitialized(true);
+      fetchData();
+    }
+  }, [pageKey]);
 
   const onBackToTop = (e) => {
     e.preventDefault();
@@ -38,6 +55,16 @@ const MyBookingsPage = () => {
     setShowModal(false);
     setModalInfo({ title: '', message: '' });
     navi('/');
+  };
+
+  const onLoginClose = () => {
+    navi('/');
+  };
+
+  const afterLogin = () => {
+    setInitialized(false);
+    setShowLogin(false);
+    setPageKey(pageKey + 1);
   };
 
   return (
@@ -136,6 +163,13 @@ const MyBookingsPage = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      <LoginModal
+        show={showLogin}
+        onClose={onLoginClose}
+        afterLogin={afterLogin}
+        toast={toast}
+      />
+      <ToastContainer position='top-center' />
     </div>
   );
 };

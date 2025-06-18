@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
-import { ToastContainer, toast } from 'react-toastify';
 import validator from 'validator';
+import { useGlobalContext } from '../context/globalContext';
+import { createUser } from '../services/user';
+import postLogin from '../services/login';
 
-const LoginModal = (props = { show: true, onClose: () => {} }) => {
+const LoginModal = (
+  props = {
+    show: true,
+    onClose: () => {},
+    afterLogin: () => {},
+    toast: () => {},
+    setUserInfo: () => {},
+  }
+) => {
+  const { login } = useGlobalContext();
+  const toast = props.toast;
+
   const [isRegister, setIsRegister] = useState(false);
   const [userid, setUserid] = useState('');
   const [password, setPassword] = useState('');
@@ -11,8 +24,37 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
   const [useridErr, setUseridErr] = useState('');
   const [passwordErr, setPasswordErr] = useState('');
   const [valPasswordErr, setValPasswordErr] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [firstNameErr, setFirstNameErr] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [lastNameErr, setLastNameErr] = useState('');
+  const [phone, setPhone] = useState('');
+  const [phoneErr, setPhoneErr] = useState('');
+  const [country, setCountry] = useState('');
+  const [countryErr, setCountryErr] = useState('');
+  const [processing, setProcessing] = useState(false);
 
-  const onDoLogin = (e) => {
+  const clearInputs = () => {
+    setUserid('');
+    setPassword('');
+    setValPassword('');
+    setFirstName('');
+    setLastName('');
+    setPhone('');
+    setCountry('');
+  };
+
+  const clearErrors = () => {
+    setUseridErr('');
+    setPasswordErr('');
+    setValPasswordErr('');
+    setFirstNameErr('');
+    setLastNameErr('');
+    setPhoneErr('');
+    setCountryErr('');
+  };
+
+  const onDoLogin = async (e) => {
     e.preventDefault();
     const valid = (() => {
       const f1 = validUserid(userid);
@@ -23,31 +65,85 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
       toast('请检查各项输入', { type: 'error' });
       return;
     }
-    // do login
+    setProcessing(true);
+    const response = await postLogin(userid, password);
+    if (!response.success) {
+      toast(response.message, { type: 'error' });
+      setProcessing(false);
+      return;
+    }
+    login({
+      token: response.data.token,
+      userId: response.data.userId,
+      email: response.data.email,
+      firstName: response.data.firstName,
+      lastName: response.data.lastName,
+      phone: response.data.phone,
+      country: response.data.country,
+    });
+    if (props.setUserInfo) {
+      props.setUserInfo({
+        userId: response.data.userId,
+        email: response.data.email,
+        firstName: response.data.firstName,
+        lastName: response.data.lastName,
+        phone: response.data.phone,
+        country: response.data.country,
+      });
+    }
+    setProcessing(false);
+    props.afterLogin();
   };
 
   const onGoLogin = (e) => {
+    e.preventDefault();
+    clearInputs();
+    clearErrors();
     setIsRegister(false);
-    e.preventDefault();
-  };
-  const onGoRegister = (e) => {
-    setIsRegister(true);
-    e.preventDefault();
   };
 
-  const onDoRegister = (e) => {
+  const onGoRegister = (e) => {
+    e.preventDefault();
+    clearInputs();
+    clearErrors();
+    setIsRegister(true);
+  };
+
+  const onDoRegister = async (e) => {
     e.preventDefault();
     const valid = (() => {
       const f1 = validUserid(userid);
       const f2 = validPassword(password);
       const f3 = validValPassword(valPassword);
-      return f1 && f2 && f3;
+      const f4 = validFirstName(firstName);
+      const f5 = validLastName(lastName);
+      const f6 = validPhone(phone);
+      const f7 = validCountry(country);
+      return f1 && f2 && f3 && f4 && f5 && f6 && f7;
     })();
     if (!valid) {
       toast('请检查各项输入', { type: 'error' });
       return;
     }
-    // do register
+
+    setProcessing(true);
+    const response = await createUser(
+      userid,
+      password,
+      firstName,
+      lastName,
+      phone,
+      country
+    );
+    if (!response.success) {
+      toast(response.message, { type: 'error' });
+    } else {
+      toast('账号注册成功，请登陆。', { type: 'success' });
+      clearInputs();
+      clearErrors();
+      setIsRegister(false);
+    }
+    setProcessing(false);
   };
 
   const validUserid = (v) => {
@@ -106,6 +202,42 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
     return true;
   };
 
+  const validFirstName = (v) => {
+    if (v.length > 20) {
+      setFirstNameErr('最大可输入20文字');
+      return false;
+    }
+    setFirstNameErr('');
+    return true;
+  };
+
+  const validLastName = (v) => {
+    if (v.length > 20) {
+      setLastNameErr('最大可输入20文字');
+      return false;
+    }
+    setLastNameErr('');
+    return true;
+  };
+
+  const validPhone = (v) => {
+    if (v.length > 20) {
+      setPhoneErr('最大可输入20文字');
+      return false;
+    }
+    setPhoneErr('');
+    return true;
+  };
+
+  const validCountry = (v) => {
+    if (v.length > 50) {
+      setCountryErr('最大可输入50文字');
+      return false;
+    }
+    setCountryErr('');
+    return true;
+  };
+
   const onUseridInput = (e) => {
     setUserid(e.target.value);
     validUserid(e.target.value);
@@ -123,15 +255,39 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
     }
   };
 
+  const onFirstNameInput = (e) => {
+    setFirstName(e.target.value);
+    if (isRegister) {
+      validFirstName(e.target.value);
+    }
+  };
+
+  const onLastNameInput = (e) => {
+    setLastName(e.target.value);
+    if (isRegister) {
+      validLastName(e.target.value);
+    }
+  };
+
+  const onPhoneInput = (e) => {
+    setPhone(e.target.value);
+    if (isRegister) {
+      validPhone(e.target.value);
+    }
+  };
+
+  const onCountryInput = (e) => {
+    setCountry(e.target.value);
+    if (isRegister) {
+      validCountry(e.target.value);
+    }
+  };
+
   const onModalClose = (e) => {
     e.preventDefault();
     setIsRegister(false);
-    setUserid('');
-    setPassword('');
-    setValPassword('');
-    setUseridErr('');
-    setPasswordErr('');
-    setValPasswordErr('');
+    clearInputs();
+    clearErrors();
     props.onClose();
   };
 
@@ -147,7 +303,7 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
         <Modal.Body>
           <Form>
             <Form.Group className='mb-3'>
-              <Form.Label className='font-bold'>账户</Form.Label>
+              <Form.Label className='font-bold'>账户(邮箱)</Form.Label>
               <Form.Control
                 type='email'
                 placeholder='请输入你的账户'
@@ -173,19 +329,73 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
               </Form.Text>
             </Form.Group>
             {isRegister && (
-              <Form.Group className='mb-3'>
-                <Form.Label className='font-bold'>验证密码</Form.Label>
-                <Form.Control
-                  type='password'
-                  placeholder='请再次输入账户密码'
-                  value={valPassword}
-                  onChange={onValPasswordInput}
-                  aria-describedby='valPasswordText'
-                />
-                <Form.Text id='valPasswordText' className='text-red-500!'>
-                  {valPasswordErr}
-                </Form.Text>
-              </Form.Group>
+              <>
+                <Form.Group className='mb-3'>
+                  <Form.Label className='font-bold'>验证密码</Form.Label>
+                  <Form.Control
+                    type='password'
+                    placeholder='请再次输入账户密码'
+                    value={valPassword}
+                    onChange={onValPasswordInput}
+                    aria-describedby='valPasswordText'
+                  />
+                  <Form.Text id='valPasswordText' className='text-red-500!'>
+                    {valPasswordErr}
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className='mb-3'>
+                  <Form.Label className='font-bold'>First Name</Form.Label>
+                  <Form.Control
+                    type='text'
+                    placeholder='First Name'
+                    value={firstName}
+                    onChange={onFirstNameInput}
+                    aria-describedby='firstNameText'
+                  />
+                  <Form.Text id='firstNameText' className='text-red-500!'>
+                    {firstNameErr}
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className='mb-3'>
+                  <Form.Label className='font-bold'>Last Name</Form.Label>
+                  <Form.Control
+                    type='text'
+                    placeholder='Last Name'
+                    value={lastName}
+                    onChange={onLastNameInput}
+                    aria-describedby='lastNameText'
+                  />
+                  <Form.Text id='lastNameText' className='text-red-500!'>
+                    {lastNameErr}
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className='mb-3'>
+                  <Form.Label className='font-bold'>电话</Form.Label>
+                  <Form.Control
+                    type='text'
+                    placeholder='电话号码'
+                    value={phone}
+                    onChange={onPhoneInput}
+                    aria-describedby='phoneText'
+                  />
+                  <Form.Text id='phoneText' className='text-red-500!'>
+                    {phoneErr}
+                  </Form.Text>
+                </Form.Group>
+                <Form.Group className='mb-3'>
+                  <Form.Label className='font-bold'>国别</Form.Label>
+                  <Form.Control
+                    type='text'
+                    placeholder='国别'
+                    value={country}
+                    onChange={onCountryInput}
+                    aria-describedby='countryText'
+                  />
+                  <Form.Text id='countryText' className='text-red-500!'>
+                    {countryErr}
+                  </Form.Text>
+                </Form.Group>
+              </>
             )}
           </Form>
           {!isRegister && (
@@ -199,13 +409,17 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
         </Modal.Body>
         <Modal.Footer>
           {!isRegister && (
-            <Button variant='primary' onClick={onDoLogin}>
+            <Button variant='primary' disabled={processing} onClick={onDoLogin}>
               登 陆
             </Button>
           )}
           {isRegister && (
             <>
-              <Button variant='primary' onClick={onDoRegister}>
+              <Button
+                variant='primary'
+                disabled={processing}
+                onClick={onDoRegister}
+              >
                 注 册
               </Button>
               <Button variant='secondary' onClick={onGoLogin}>
@@ -218,7 +432,6 @@ const LoginModal = (props = { show: true, onClose: () => {} }) => {
           </Button>
         </Modal.Footer>
       </Modal>
-      <ToastContainer position='top-center' />
     </>
   );
 };

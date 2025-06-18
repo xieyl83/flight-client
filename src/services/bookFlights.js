@@ -1,9 +1,12 @@
 import axios from 'axios';
+import api from './app';
 
-const bookFlights = (searchForm, departureTrip, returnTrip) =>
+const bookFlights = (token = '', searchForm, departureTrip, returnTrip) =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      alg: 'HS256',
     };
     const flights = [];
     flights.push({
@@ -16,12 +19,12 @@ const bookFlights = (searchForm, departureTrip, returnTrip) =>
         pnum: searchForm.pnum,
       });
     }
-    axios
-      .post('/api/booking', { flights }, { headers })
+    api
+      .post('booking', { flights }, { headers })
       .then((response) => {
         resolve({
           success: response.data.success,
-          code: response.data.status,
+          code: response.data.code,
           message: response.data.message,
           data: response.data.data,
         });
@@ -30,7 +33,7 @@ const bookFlights = (searchForm, departureTrip, returnTrip) =>
         if (axios.isAxiosError(err)) {
           resolve({
             success: false,
-            code: err.response.status,
+            code: err.status,
             message: err.message,
             data: {},
           });
