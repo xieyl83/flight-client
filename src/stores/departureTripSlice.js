@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-export const departureTripSlice = createSlice({
-  name: 'departureTripSlice',
-  initialState: {
-    departureTrip: {
+const storageName = 'flightclient-departureTrip';
+const departureTripFromStorage = localStorage.getItem(storageName)
+  ? localStorage.getItem(storageName)
+  : JSON.stringify({
       company_id: '',
       company_name: '',
       dep_city: '',
@@ -26,7 +26,12 @@ export const departureTripSlice = createSlice({
       flight_number: '',
       price: 0,
       stop_over: null,
-    },
+    });
+
+export const departureTripSlice = createSlice({
+  name: 'departureTripSlice',
+  initialState: {
+    departureTrip: JSON.parse(departureTripFromStorage),
   },
   reducers: {
     setDepartureTrip: (state, form) => {
@@ -54,6 +59,7 @@ export const departureTripSlice = createSlice({
       state.departureTrip.flight_number = form.payload.flight_number;
       state.departureTrip.price = form.payload.price;
       state.departureTrip.stop_over = form.payload.stop_over;
+      localStorage.setItem(storageName, JSON.stringify(state.departureTrip));
     },
   },
 });

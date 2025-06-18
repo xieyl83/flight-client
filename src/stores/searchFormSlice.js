@@ -1,16 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-export const searchFormSlice = createSlice({
-  name: 'searchFormSlice',
-  initialState: {
-    searchForm: {
+const storageName = 'flightclient-searchForm';
+const searchFormFromStorage = localStorage.getItem(storageName)
+  ? localStorage.getItem(storageName)
+  : JSON.stringify({
       dep: null,
       des: null,
       depDate: null,
       rtnDate: null,
       pnum: 1,
       isRoundTrip: false,
-    },
+    });
+
+export const searchFormSlice = createSlice({
+  name: 'searchFormSlice',
+  initialState: {
+    searchForm: JSON.parse(searchFormFromStorage),
   },
   reducers: {
     setSearchForm: (state, form) => {
@@ -20,6 +25,7 @@ export const searchFormSlice = createSlice({
       state.searchForm.rtnDate = form.payload.rtnDate;
       state.searchForm.pnum = form.payload.pnum;
       state.searchForm.isRoundTrip = form.payload.isRoundTrip;
+      localStorage.setItem(storageName, JSON.stringify(state.searchForm));
     },
   },
 });

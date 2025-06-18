@@ -43,6 +43,7 @@ const MyBookingsPage = () => {
       setInitialized(true);
       fetchData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageKey]);
 
   const onBackToTop = (e) => {

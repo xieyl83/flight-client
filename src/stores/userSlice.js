@@ -1,9 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-export const userSlice = createSlice({
-  name: 'userSlice',
-  initialState: {
-    user: {
+const storageName = 'flightclient-user';
+const userFromStorage = localStorage.getItem(storageName)
+  ? localStorage.getItem(storageName)
+  : JSON.stringify({
       isLogin: false,
       token: '',
       userId: 0,
@@ -12,11 +12,16 @@ export const userSlice = createSlice({
       lastName: '',
       phone: '',
       country: '',
-    },
+    });
+
+export const userSlice = createSlice({
+  name: 'userSlice',
+  initialState: {
+    user: JSON.parse(userFromStorage),
   },
   reducers: {
     login: (state, userInfo) => {
-      state.user = {
+      const userData = {
         isLogin: true,
         token: userInfo.payload.token,
         userId: userInfo.payload.userId,
@@ -26,6 +31,8 @@ export const userSlice = createSlice({
         phone: userInfo.payload.phone,
         country: userInfo.payload.country,
       };
+      state.user = userData;
+      localStorage.setItem(storageName, JSON.stringify(userData));
     },
     logout: (state) => {
       state.user = {
@@ -38,6 +45,7 @@ export const userSlice = createSlice({
         phone: '',
         country: '',
       };
+      localStorage.removeItem(storageName);
     },
   },
 });
