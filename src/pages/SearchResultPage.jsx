@@ -11,7 +11,6 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import GlobalContext from '../context/globalContext';
 import sortFlights from '../utils/sortFlights';
 import getFlights from '../services/getFlights';
 import { useDispatch, useSelector } from 'react-redux';
@@ -20,7 +19,6 @@ import { setReturnTrip } from '../stores/returnTripSlice';
 dayjs.extend(duration);
 
 const SearchResultPage = () => {
-  // const gctx = useContext(GlobalContext);
   const navi = useNavigate();
 
   const searchForm = useSelector((state) => state.searchFormReducer.searchForm);

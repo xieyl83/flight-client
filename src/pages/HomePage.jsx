@@ -14,13 +14,13 @@ import HomePageStyles from '../styles/HomePage.module.css';
 import 'react-date-picker/dist/DatePicker.css';
 import 'react-calendar/dist/Calendar.css';
 import sleep from '../utils/sleep';
-import { useGlobalContext } from '../context/globalContext';
 import { setSearchForm } from '../stores/searchFormSlice';
+import { logout } from '../stores/userSlice';
 
 const HomePage = () => {
-  const { isLogin, user, logout } = useGlobalContext();
   const navi = useNavigate();
   const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
+  const user = useSelector((state) => state.userReducer.user);
   const dispatch = useDispatch();
 
   const flightImageElement = useRef(null);
@@ -37,7 +37,6 @@ const HomePage = () => {
   const [rtnDate, setRtnDate] = useState(searchForm.rtnDate || new Date());
   const [pnum, setPnum] = useState(searchForm.pnum || '1');
   const [roundTrip, setRoundTrip] = useState(searchForm.isRoundTrip ? 2 : 1);
-  const [userInfo, setUserInfo] = useState(user);
   const [pageKey, setPageKey] = useState(1);
 
   useLayoutEffect(() => {
@@ -94,7 +93,7 @@ const HomePage = () => {
 
   const onLoginClick = (e) => {
     e.preventDefault();
-    if (isLogin) return;
+    if (user.isLogin) return;
     setShowLogin(true);
   };
 
@@ -167,7 +166,7 @@ const HomePage = () => {
   };
 
   const onLogoutClick = () => {
-    logout();
+    dispatch(logout());
     setPageKey(pageKey + 1);
     toast('已注销。', { type: 'success' });
   };
@@ -187,21 +186,21 @@ const HomePage = () => {
             left: `${loginElementPos[1]}px`,
           }}
         >
-          {!isLogin && (
+          {!user.isLogin && (
             <Button variant='primary' onClick={onLoginClick}>
               登 陆
             </Button>
           )}
-          {isLogin && (
+          {user.isLogin && (
             <span className='text-white font-bold'>
-              欢迎，{userInfo.firstName}&nbsp;{userInfo.lastName}
+              欢迎，{user.firstName}&nbsp;{user.lastName}
             </span>
           )}
           <Button variant='primary' className='ms-2' onClick={onGoMyBookings}>
             我的订票信息
           </Button>
         </div>
-        {isLogin && (
+        {user.isLogin && (
           <div
             className='absolute'
             style={{
@@ -344,7 +343,6 @@ const HomePage = () => {
         onClose={onLoginClose}
         afterLogin={afterLogin}
         toast={toast}
-        setUserInfo={setUserInfo}
       />
       <ToastContainer position='top-center' />
     </div>

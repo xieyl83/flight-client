@@ -11,12 +11,10 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer, toast } from 'react-toastify';
 import LoginModal from '../components/LoginModal';
-import { useGlobalContext } from '../context/globalContext';
 import { useSelector } from 'react-redux';
 import bookFlights from '../services/bookFlights';
 
 const BookingReviewPage = () => {
-  const { isLogin, token } = useGlobalContext();
   const navi = useNavigate();
 
   const searchForm = useSelector((state) => state.searchFormReducer.searchForm);
@@ -24,6 +22,7 @@ const BookingReviewPage = () => {
     (state) => state.departureTripReducer.departureTrip
   );
   const returnTrip = useSelector((state) => state.returnTripReducer.returnTrip);
+  const user = useSelector((state) => state.userReducer.user);
 
   const [processing, setProcessing] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -37,7 +36,7 @@ const BookingReviewPage = () => {
   const doBook = async () => {
     setProcessing(true);
     const response = await toast.promise(
-      bookFlights(token, searchForm, departureTrip, returnTrip),
+      bookFlights(user.token, searchForm, departureTrip, returnTrip),
       { pending: '机票预定中，请稍候...' }
     );
     if (response.success) {
@@ -55,12 +54,11 @@ const BookingReviewPage = () => {
 
   const onBookClick = async (e) => {
     e.preventDefault();
-    if (!isLogin) {
+    if (!user.isLogin) {
       setShowLogin(true);
-      return;
+    } else {
+      doBook();
     }
-
-    doBook();
   };
 
   const onCancelClick = (e) => {
@@ -84,7 +82,8 @@ const BookingReviewPage = () => {
   };
 
   const afterLogin = () => {
-    doBook();
+    setShowLogin(false);
+    toast('已登陆，请重新尝试订票。', { type: 'success' });
   };
 
   return (

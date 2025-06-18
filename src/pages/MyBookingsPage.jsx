@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button, Modal, Placeholder, Table } from 'react-bootstrap';
 import { ToastContainer, toast } from 'react-toastify';
 import LoginModal from '../components/LoginModal';
+import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 import getMyBookings from '../services/getMyBookings';
-import { useGlobalContext } from '../context/globalContext';
 
 const MyBookingsPage = () => {
-  const { isLogin, token } = useGlobalContext();
   const navi = useNavigate();
+  const user = useSelector((state) => state.userReducer.user);
 
   const [isLoading, setIsLoading] = useState(true);
   const [bookings, setBookings] = useState([]);
@@ -20,13 +20,13 @@ const MyBookingsPage = () => {
   const [pageKey, setPageKey] = useState(1);
 
   useEffect(() => {
-    if (!isLogin) {
+    if (!user.isLogin) {
       setShowLogin(true);
       return;
     }
 
     const fetchData = async () => {
-      const response = await getMyBookings(token, 1, 100, '', 'asc');
+      const response = await getMyBookings(user.token, 1, 100, '', 'asc');
       if (!response.success) {
         if (response.code === 403) {
           setShowLogin(true);

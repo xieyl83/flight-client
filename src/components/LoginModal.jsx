@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button, Form, Modal } from 'react-bootstrap';
 import validator from 'validator';
-import { useGlobalContext } from '../context/globalContext';
+import { useDispatch } from 'react-redux';
+import { login } from '../stores/userSlice';
 import { createUser } from '../services/user';
 import postLogin from '../services/login';
 
@@ -11,10 +12,10 @@ const LoginModal = (
     onClose: () => {},
     afterLogin: () => {},
     toast: () => {},
-    setUserInfo: () => {},
   }
 ) => {
-  const { login } = useGlobalContext();
+  const dispatch = useDispatch();
+
   const toast = props.toast;
 
   const [isRegister, setIsRegister] = useState(false);
@@ -72,25 +73,17 @@ const LoginModal = (
       setProcessing(false);
       return;
     }
-    login({
-      token: response.data.token,
-      userId: response.data.userId,
-      email: response.data.email,
-      firstName: response.data.firstName,
-      lastName: response.data.lastName,
-      phone: response.data.phone,
-      country: response.data.country,
-    });
-    if (props.setUserInfo) {
-      props.setUserInfo({
+    dispatch(
+      login({
+        token: response.data.token,
         userId: response.data.userId,
         email: response.data.email,
         firstName: response.data.firstName,
         lastName: response.data.lastName,
         phone: response.data.phone,
         country: response.data.country,
-      });
-    }
+      })
+    );
     setProcessing(false);
     props.afterLogin();
   };
