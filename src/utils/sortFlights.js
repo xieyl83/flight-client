@@ -44,8 +44,6 @@ const sortFlights = (flights, by, asc = true) => {
       });
     }
   }
-  console.log('sorted~');
-  console.log(arr);
   return arr;
 };
 

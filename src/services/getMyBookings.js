@@ -1,18 +1,25 @@
 import axios from 'axios';
 import api from './app';
 
-const getFlights = (dep, des, depDate) =>
+const getMyBookings = (
+  token = '',
+  page_number = 1,
+  page_limit = 50,
+  sort_col = '',
+  sort_type = 'asc'
+) =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
-    };
-    const params = {
-      dep,
-      des,
-      depDate,
+      Authorization: `Bearer ${token}`,
+      alg: 'HS256',
     };
     api
-      .get('flights', { headers, params })
+      .post(
+        'mybookings',
+        { page_number, page_limit, sort_col, sort_type },
+        { headers }
+      )
       .then((response) => {
         resolve({
           success: response.data.success,
@@ -26,20 +33,18 @@ const getFlights = (dep, des, depDate) =>
           resolve({
             success: false,
             code: err.status,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         } else {
           resolve({
             success: false,
             code: 0,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         }
       });
   });
 
-export default getFlights;
+export default getMyBookings;

@@ -1,18 +1,14 @@
 import axios from 'axios';
 import api from './app';
 
-const getFlights = (dep, des, depDate) =>
+const login = (email = '', password = '') =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
     };
-    const params = {
-      dep,
-      des,
-      depDate,
-    };
+    email = email.trim();
     api
-      .get('flights', { headers, params })
+      .post('login', { email, password }, { headers })
       .then((response) => {
         resolve({
           success: response.data.success,
@@ -26,20 +22,18 @@ const getFlights = (dep, des, depDate) =>
           resolve({
             success: false,
             code: err.status,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         } else {
           resolve({
             success: false,
             code: 0,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         }
       });
   });
 
-export default getFlights;
+export default login;

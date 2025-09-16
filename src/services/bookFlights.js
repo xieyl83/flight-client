@@ -1,18 +1,26 @@
 import axios from 'axios';
 import api from './app';
 
-const getFlights = (dep, des, depDate) =>
+const bookFlights = (token = '', searchForm, departureTrip, returnTrip) =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      alg: 'HS256',
     };
-    const params = {
-      dep,
-      des,
-      depDate,
-    };
+    const flights = [];
+    flights.push({
+      flight_id: departureTrip.flight_id,
+      pnum: searchForm.pnum,
+    });
+    if (searchForm.isRoundTrip) {
+      flights.push({
+        flight_id: returnTrip.flight_id,
+        pnum: searchForm.pnum,
+      });
+    }
     api
-      .get('flights', { headers, params })
+      .post('booking', { flights }, { headers })
       .then((response) => {
         resolve({
           success: response.data.success,
@@ -26,20 +34,18 @@ const getFlights = (dep, des, depDate) =>
           resolve({
             success: false,
             code: err.status,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         } else {
           resolve({
             success: false,
             code: 0,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         }
       });
   });
 
-export default getFlights;
+export default bookFlights;

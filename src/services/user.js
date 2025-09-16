@@ -1,18 +1,29 @@
 import axios from 'axios';
 import api from './app';
 
-const getFlights = (dep, des, depDate) =>
+export const createUser = (
+  email = '',
+  password = '',
+  firstName = '',
+  lastName = '',
+  phone = '',
+  country = ''
+) =>
   new Promise((resolve) => {
     const headers = {
       'Content-Type': 'application/json',
     };
-    const params = {
-      dep,
-      des,
-      depDate,
-    };
+    email = email.trim();
+    firstName = firstName.trim();
+    lastName = lastName.trim();
+    phone = phone.trim();
+    country = country.trim();
     api
-      .get('flights', { headers, params })
+      .post(
+        'user/create',
+        { email, password, firstName, lastName, phone, country },
+        { headers }
+      )
       .then((response) => {
         resolve({
           success: response.data.success,
@@ -26,20 +37,16 @@ const getFlights = (dep, des, depDate) =>
           resolve({
             success: false,
             code: err.status,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         } else {
           resolve({
             success: false,
             code: 0,
-            data: {
-              message: err.message,
-            },
+            message: err.message,
+            data: {},
           });
         }
       });
   });
-
-export default getFlights;
